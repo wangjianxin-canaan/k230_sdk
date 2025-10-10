@@ -2,7 +2,8 @@
 distribution_type="$1"
 BUILD_DIR="$2"
 BRW_BUILD_DIR="$3"
-BINARIES_DIR="${BRW_BUILD_DIR}/images"
+#BINARIES_DIR="${BRW_BUILD_DIR}/images"
+K230_SDK_ROOT="$(dirname $(dirname ${BUILD_DIR}))"
 
 set -e;
 COLOR_NONE="\033[0m"
@@ -22,7 +23,7 @@ print_blue()
 
 debian_gen_rootfs()
 {
-    local K230_SDK_ROOT=$(dirname $(dirname ${BRW_BUILD_DIR}))
+    local K230_SDK_ROOT=$(dirname $(dirname ${BUILD_DIR}))
 
     print_red "you need  manually execute the follow commands"
     echo -e ${BLUE}
@@ -40,12 +41,12 @@ ubuntu_gen_rootfs()
 get_image_last_name()
 {
 	local distname="$1"
-    local K230_SDK_ROOT=$(dirname $(dirname ${BRW_BUILD_DIR}))
+    local K230_SDK_ROOT=$(dirname $(dirname ${BUILD_DIR}))
 
 
 
 	local f="$1"
-	local CONF=$(basename ${BRW_BUILD_DIR})
+	local CONF=$(basename ${BUILD_DIR})
     # echo ${CONF}
     # echo ${K230_SDK_ROOT}
     # exit 1;
@@ -95,6 +96,7 @@ distribution_rootfs_replace()
     local md5_v="$4"
     local dist_img_name="${distname}.img"      #debian.img
 
+
     if [ "$(id -u)" -ne 0 ]; then
         print_red "permission denied,you need root privileges,example: sudo make debian"
         exit 1;
@@ -118,7 +120,12 @@ distribution_rootfs_replace()
     sed -i 's/resizepart 2/resizepart 3/' ${distr_rootfs}/opt/mount_boot.sh
     sed -i 's/p2/p3/' ${distr_rootfs}/opt/mount_boot.sh
     sed -i  '/mount/d' ${distr_rootfs}/opt/mount_boot.sh
-    cp ${BUILD_DIR}/little/linux/rootfs/lib/modules/5.10.4+ ${distr_rootfs}/lib/modules/ -r  ;
+    echo "insmod /mnt/k_ipcm.ko ; /mnt/sharefs &" >>  ${distr_rootfs}/opt/mount_boot.sh
+
+    sed -i 's/RemainAfterExit=no/RemainAfterExit=yes/' ${distr_rootfs}/etc/systemd/system/mount_boot.service
+
+    cp ${K230_SDK_ROOT}/board/common/post_copy_rootfs/bin/sta.sh   ${distr_rootfs}/bin;
+    cp ${BUILD_DIR}/little/linux/rootfs/lib/modules ${distr_rootfs}/lib/ -r  ;
     cp ${BUILD_DIR}/little/linux/rootfs/mnt/* ${distr_rootfs}/mnt/ -r  ;
     mkdir -p ${distr_rootfs}/sharefs;
     cp ${BUILD_DIR}/images/big-core/app/* ${distr_rootfs}/sharefs/;
@@ -175,7 +182,7 @@ distribution_rootfs_replace()
     rm -rf ${last_name}; ln -s ${dist_img_name}.gz  ${last_name}
 
 
-    print_blue "build successfull : ${BINARIES_DIR}/${last_name}"
+    print_blue "build successfull : ${BUILD_DIR}/images/${last_name}"
     chmod a+w ${distr_rootfs}.tar.gz  ${dist_img_name}.gz  ${last_name}
 
     rm -rf ${distr_rootfs} ${distr_rootfs}.ext4;
