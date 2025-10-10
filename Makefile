@@ -507,6 +507,9 @@ buildroot-clean: defconfig
 	make CONF=$(BUILDROOT_DEFCONFIG) BRW_BUILD_DIR=$(BUILDROOT_BUILD_DIR) BR2_TOOLCHAIN_EXTERNAL_PATH=$(LINUX_EXEC_PATH)/../ BR2_TOOLCHAIN_EXTERNAL_CUSTOM_PREFIX=$(LINUX_CC_PREFIX) clean; \
 	cd -
 
+debian ubuntu openouler debian_rootfs ubuntu_rootfs :
+	@$ ./tools/distribution/distribution.sh  $@  $(BUILD_DIR)  $(BUILDROOT_BUILD_DIR)
+
 .PHONY: uboot
 uboot: defconfig prepare_memory check_src
 	@export PATH=$(LINUX_EXEC_PATH):$(PATH);export CROSS_COMPILE=$(LINUX_CC_PREFIX);export ARCH=riscv; \
