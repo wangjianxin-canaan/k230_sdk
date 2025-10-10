@@ -28,7 +28,7 @@ SRCS += ../server_ops.c
 SRCS_APP := sfs_server_main.c
 OBJS := $(patsubst %.c,%.o, $(SRCS))
 
-LIBDEPS := -lpthread -lsharefs
+LIBDEPS :=  -lsharefs  -lpthread
 
 ARFLAGS = cr
 LOCAL_CFLAGS += -I..
@@ -36,7 +36,7 @@ LOCAL_CFLAGS += -I..
 all: $(APP) $(LIB_SO)
 
 $(APP): $(LIB_A)
-	$(CROSS_COMPILE)gcc -o $@ $(SRCS_APP) $(LOCAL_LD_CFLAGS) -L. $(LIBDEPS)
+	$(CROSS_COMPILE)gcc --static -o $@ $(SRCS_APP) $(LOCAL_LD_CFLAGS) -L. $(LIBDEPS)
 
 $(LIB_A): $(OBJS)
 	mkdir -p $(OUT)
