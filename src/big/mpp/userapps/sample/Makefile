@@ -2,7 +2,7 @@ MPP_BUILD_DIR ?= $(shell pwd)
 FASTBOOT_BUILD_DIR=$(MPP_BUILD_DIR)/userapps/sample/fastboot_app
 TRIPLE_CAMERA_BUILD_DIR=$(MPP_BUILD_DIR)/userapps/sample/sample_triple_camera_facedetect
 SAMPLE_LVGL_BUILD_DIR=$(MPP_BUILD_DIR)/userapps/sample/sample_lvgl
-all:
+all:sample_lvgl_nxp
 	@rm -f elf/*
 	@mkdir -p $(FASTBOOT_BUILD_DIR)
 	@mkdir -p $(TRIPLE_CAMERA_BUILD_DIR)
@@ -105,3 +105,9 @@ clean:
 	@$(MAKE) -C sample_i2c_slave clean
 	@cd sample_gpio_intc; make clean
 	@cd sample_hwtimer; make clean
+
+.PHONY:sample_lvgl_nxp
+sample_lvgl_nxp:
+	@rm -rf   $(SAMPLE_LVGL_BUILD_DIR)_nxp;
+	@ mkdir -p $(SAMPLE_LVGL_BUILD_DIR)_nxp
+	@cmake -S sample_lvgl_nxp -B $(SAMPLE_LVGL_BUILD_DIR)_nxp && cmake --build $(SAMPLE_LVGL_BUILD_DIR)_nxp -j && make -C $(SAMPLE_LVGL_BUILD_DIR)_nxp install

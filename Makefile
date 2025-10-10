@@ -238,6 +238,13 @@ mpp-apps:check_src
 	cp $(RTSMART_SRC_DIR)/init.sh $(RTSMART_SRC_DIR)/userapps/root/bin/; \
 	cd -;
 
+sample_lvgl_nxp:check_src
+	@export PATH=$(RTT_EXEC_PATH):$(PATH); \
+	export RTSMART_SRC_DIR=$(K230_SDK_ROOT)/$(RT-SMART_SRC_PATH); \
+	cd $(MPP_SRC_DIR); \
+	make -C userapps/sample sample_lvgl_nxp || exit $?;
+
+
 .PHONY: mpp-apps-clean
 mpp-apps-clean:
 	@export PATH=$(RTT_EXEC_PATH):$(PATH); \
@@ -509,6 +516,7 @@ buildroot-clean: defconfig
 
 debian ubuntu openouler debian_rootfs ubuntu_rootfs :
 	@$ ./tools/distribution/distribution.sh  $@  $(BUILD_DIR)  $(BUILDROOT_BUILD_DIR)
+
 
 .PHONY: uboot
 uboot: defconfig prepare_memory check_src

@@ -12,11 +12,11 @@
 #include <src/widgets/label/lv_label.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <vector_graphic/lv_demo_vector_graphic.h>
+//#include <vector_graphic/lv_demo_vector_graphic.h>
 #include <vg_lite.h>
 #include <vg_lite_util.h>
 #include <unistd.h>
-#include "demos/lv_demos.h"
+//#include "demos/lv_demos.h"
 #include "mpi_connector_api.h"
 #include <poll.h>
 #include <time.h>
@@ -27,12 +27,17 @@
 #include <mpi_vo_api.h>
 #include <mpi_sys_api.h>
 
+#include "gui_guider.h"
+#include "events_init.h"
+#include "custom.h"
+lv_ui guider_ui;
+
 // struct display_buffer* dbuf[BUFFER_COUNT];
 char *error_type[] = {
     "VG_LITE_SUCCESS",
     "VG_LITE_INVALID_ARGUMENT",
     "VG_LITE_OUT_OF_MEMORY",
-    "VG_LITE_NO_CONTEXT",      
+    "VG_LITE_NO_CONTEXT",
     "VG_LITE_TIMEOUT",
     "VG_LITE_OUT_OF_RESOURCES",
     "VG_LITE_GENERIC_IO",
@@ -340,8 +345,12 @@ int main(int argc, char *argv[]) {
     // display_commit_buffer(dbuf[0], 1920 - dbuf[0]->width, 1080 - dbuf[0]->height);
     lv_tick_set_cb(tick_get_cb);
 
-    lv_demo_widgets();
-    lv_demo_widgets_start_slideshow();
+    setup_ui(&guider_ui);
+    events_init(&guider_ui);
+    custom_init(&guider_ui);
+
+    // lv_demo_widgets();
+    // lv_demo_widgets_start_slideshow();
     // lv_demo_music();
     // lv_demo_vector_graphic_buffered();
     // lv_demo_benchmark();
