@@ -8,31 +8,41 @@ source Kconfig.storage
 source Kconfig.wifi
 
 config SUPPORT_RTSMART
-        bool  "support rt smart on core 1"
+        bool  "support rt smart"
         default y
-        help  
-                support rt smart on core 1;
+        help
+                support rt smart;
+
+config RTT_RUN_CORE_ID
+        depends on SUPPORT_RTSMART
+        int  "RTSMAR RUN core id"
+        default 1
+        help
+           support RTTHREAD  on core num
+           0--little core 800M,1----big core 1.6G
+
 
 config SUPPORT_LINUX
         bool  "support linux "
         default y
-        help  
+        help
            support linux ;
 
 config LINUX_RUN_CORE_ID
         depends on SUPPORT_LINUX
-        int  "support linux on core id"
+        int  " linux and uboot run core id"
         default 0
-        help  
+        help
            support linux  on core num;
-           
+           0--little core 800M,1----big core 1.6G
+
 config MPP_MIDDLEWARE
         bool  "make mpp  middleware "
         default n
-        help  
+        help
            make mpp middleware ;
 ####################debug /realse version begain {
-choice 
+choice
 	prompt "build debug/release version"
     default BUILD_RELEASE_VER
     help
@@ -50,7 +60,7 @@ endchoice
 config DBGLV
         int  "config debug level"
         depends on BUILD_DEBUG_VER
-        help  
+        help
               debug level: 0...8 ;
               0----release
         default 0 if BUILD_RELEASE_VER

@@ -60,5 +60,6 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
 endif()
 
 #target_link_libraries(${PROJECT_NAME}.elf lvgl lvgl::examples lvgl::demos lvgl::thorvg vg_lite vg_lite_util m vo connector vb sys)
-target_link_libraries(${PROJECT_NAME}.elf lvgl lvgl::thorvg vg_lite vg_lite_util m vo connector vb sys)
+#target_link_libraries(${PROJECT_NAME}.elf lvgl lvgl::thorvg vg_lite vg_lite_util m vo connector vb sys)
+target_link_libraries(${PROJECT_NAME}.elf lvgl lvgl::thorvg m vo connector vb sys)
 install(TARGETS ${PROJECT_NAME}.elf DESTINATION elf)
