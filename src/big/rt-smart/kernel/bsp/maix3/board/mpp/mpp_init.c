@@ -23,7 +23,7 @@ extern int log_init(void);
 
 /********************MMZ*****************************/
 #ifndef MEM_MMZ_BASE
-#define MEM_MMZ_BASE 0x10000000UL
+#define MEM_MMZ_BASE 0x30000000UL
 #endif
 
 #ifndef MEM_MMZ_SIZE
