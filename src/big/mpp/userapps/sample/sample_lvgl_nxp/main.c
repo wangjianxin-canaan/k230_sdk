@@ -211,6 +211,11 @@ uint32_t linux_get_idle(void)
     return (duration_us - current_used_us) * 100 / duration_us;
 }
 
+int uart_recv(void*)
+{
+
+}
+
 int main(int argc, char *argv[]) {
     int c, ret, connector_fd;
     k_connector_type connector_type = LT9611_MIPI_4LAN_1920X1080_60FPS;

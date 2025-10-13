@@ -238,11 +238,6 @@ mpp-apps:check_src
 	cp $(RTSMART_SRC_DIR)/init.sh $(RTSMART_SRC_DIR)/userapps/root/bin/; \
 	cd -;
 
-sample_lvgl_nxp:check_src
-	@export PATH=$(RTT_EXEC_PATH):$(PATH); \
-	export RTSMART_SRC_DIR=$(K230_SDK_ROOT)/$(RT-SMART_SRC_PATH); \
-	cd $(MPP_SRC_DIR); \
-	make -C userapps/sample sample_lvgl_nxp || exit $?;
 
 
 .PHONY: mpp-apps-clean
@@ -624,3 +619,13 @@ show_current_config:defconfig
 	@echo -e "linux_dts=$(LINUX_SRC_PATH)arch/riscv/boot/dts/kendryte/$(CONFIG_LINUX_DTB).dts \n"
 	@echo -e "buildroot_config=$(BUILDROOT-EXT_SRC_PATH)/configs/$(BUILDROOT_DEFCONFIG)"
 	@echo -e "rtt_config=$(RT-SMART_SRC_PATH)/kernel/bsp/maix3/configs/$(CONFIG_RTTHREAD_DEFCONFIG).config \n"
+
+sample_lvgl_nxp:check_src
+	@export PATH=$(RTT_EXEC_PATH):$(PATH); \
+	export RTSMART_SRC_DIR=$(K230_SDK_ROOT)/$(RT-SMART_SRC_PATH); \
+	cd $(MPP_SRC_DIR); \
+	make -C userapps/sample sample_lvgl_nxp || exit $?;
+	cp   $(MPP_SRC_DIR)/userapps/sample/elf/sample-lvgl-nxp.elf $(RTSMART_SRC_DIR)/userapps/root/bin/; rm -rf $(RTSMART_SRC_DIR)/userapps/root/bin/fastboot_app.elf ;
+	echo "/bin/sample-lvgl-nxp.elf -d 2 -W 480 -H 800 " > init.sh; cp init.sh $(RTSMART_SRC_DIR)/userapps/root/bin/; rm -rf init.sh;
+	make   rtt_update_romfs big-core-opensbi
+	make build-image

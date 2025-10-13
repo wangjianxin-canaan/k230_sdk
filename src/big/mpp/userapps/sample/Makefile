@@ -108,6 +108,6 @@ clean:
 
 .PHONY:sample_lvgl_nxp
 sample_lvgl_nxp:
-	@rm -rf   $(SAMPLE_LVGL_BUILD_DIR)_nxp;
+	#@rm -rf   $(SAMPLE_LVGL_BUILD_DIR)_nxp;
 	@ mkdir -p $(SAMPLE_LVGL_BUILD_DIR)_nxp
 	@cmake -S sample_lvgl_nxp -B $(SAMPLE_LVGL_BUILD_DIR)_nxp && cmake --build $(SAMPLE_LVGL_BUILD_DIR)_nxp -j && make -C $(SAMPLE_LVGL_BUILD_DIR)_nxp install
