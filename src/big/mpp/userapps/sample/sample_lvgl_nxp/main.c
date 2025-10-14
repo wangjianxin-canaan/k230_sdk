@@ -30,6 +30,8 @@
 #include "gui_guider.h"
 #include "events_init.h"
 #include "custom.h"
+#include <pthread.h>
+
 lv_ui guider_ui;
 
 // struct display_buffer* dbuf[BUFFER_COUNT];
@@ -116,7 +118,7 @@ static uint32_t tick_get_cb(void)
     return time_ms;
 }
 
-static bool flag_running = true;
+bool flag_running = true;
 
 static void sighandler(int signum) {
     flag_running = false;
@@ -193,29 +195,25 @@ void vg_free_buffer(void * p) {
 uint32_t linux_get_idle(void)
 {
     return 0;
-    struct rusage state;
-    static struct timeval last_time;
-    static uint64_t last_used_us;
-    struct timeval current_time;
+    // struct rusage state;
+    // static struct timeval last_time;
+    // static uint64_t last_used_us;
+    // struct timeval current_time;
 
-    if (getrusage(RUSAGE_SELF, &state)) {
-        perror("getrusage");
-        return 100;
-    }
-    gettimeofday(&current_time, NULL);
-    uint64_t duration_us = (current_time.tv_sec - last_time.tv_sec) * 1000000 + (current_time.tv_usec - last_time.tv_usec);
-    last_time = current_time;
-    uint64_t used_us = state.ru_utime.tv_sec * 1000000 + state.ru_utime.tv_usec + state.ru_stime.tv_sec * 1000000 + state.ru_stime.tv_usec;
-    uint64_t current_used_us = used_us - last_used_us;
-    last_used_us = used_us;
-    return (duration_us - current_used_us) * 100 / duration_us;
+    // if (getrusage(RUSAGE_SELF, &state)) {
+    //     perror("getrusage");
+    //     return 100;
+    // }
+    // gettimeofday(&current_time, NULL);
+    // uint64_t duration_us = (current_time.tv_sec - last_time.tv_sec) * 1000000 + (current_time.tv_usec - last_time.tv_usec);
+    // last_time = current_time;
+    // uint64_t used_us = state.ru_utime.tv_sec * 1000000 + state.ru_utime.tv_usec + state.ru_stime.tv_sec * 1000000 + state.ru_stime.tv_usec;
+    // uint64_t current_used_us = used_us - last_used_us;
+    // last_used_us = used_us;
+    // return (duration_us - current_used_us) * 100 / duration_us;
 }
 
-int uart_recv(void*)
-{
-
-}
-
+extern int uart_recv(void*);
 int main(int argc, char *argv[]) {
     int c, ret, connector_fd;
     k_connector_type connector_type = LT9611_MIPI_4LAN_1920X1080_60FPS;
@@ -395,6 +393,9 @@ int main(int argc, char *argv[]) {
     struct timeval start, current;
     gettimeofday(&start, NULL);
 
+    static pthread_t threadid ;
+    pthread_create(&threadid, NULL, (void * (*)(void *))uart_recv, NULL);
+
     while(flag_running) {
         uint32_t idle_time = lv_timer_handler(); /*Returns the time to the next timer execution*/
         if (idle_time > 65536) {
@@ -408,7 +409,7 @@ int main(int argc, char *argv[]) {
         // lv_obj_set_pos(btn1, 20, (elapsed_us / 30000) % 480);
         // lv_obj_align(btn1, LV_ALIGN_CENTER, 0, (elapsed_us / 30000) % 100);
     }
-
+    pthread_join(threadid, NULL);
     vg_lite_close();
     kd_mpi_vo_osd_disable(K_VO_OSD1);
     kd_mpi_vo_disable();
