@@ -8,11 +8,10 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <poll.h>
-
-
-
+#include "ring_buffer.h"
 #include <src/core/lv_global.h>
 
+pthread_cond_t buffer_not_empty; // 条件变量：缓冲区不为空
 
 extern bool flag_running;
 #define	IOC_SET_BAUDRATE            _IOW('U', 0x40, int)
@@ -45,17 +44,20 @@ typedef enum _uart_receive_trigger
 } uart_receive_trigger_t;
 
 
-int uart_recv(void*)
+
+void * uart_recv(void*)
 {
     int fd;
     struct pollfd fds[1];
     int ret = 0, cnt = 0;
 
+
+
     printf(" [app] open uart2.....\n");
     fd = open("/dev/uart2", O_RDWR);
     if (fd < 0){
         printf("open dev uart2 failed!\n");
-        return -1;
+        return NULL;
     }
 
     struct uart_configure config = {
@@ -86,13 +88,24 @@ int uart_recv(void*)
             ret = read(fd, buff, sizeof(buff));
             if(ret > 0){
                 for(int i = 0; i < ret; i++){
-                    printf("%c", buff[i] & 0xff);
+                    //printf("%c", buff[i] & 0xff);
+                    ring_buffer_write(&uart_ring_buffer, buff[i] & 0xff );
                 }
+                pthread_cond_signal(&buffer_not_empty);
             }
         }
     }
 
     close(fd);
+    pthread_cond_destroy(&buffer_not_empty);
+    pthread_exit(NULL);
 }
 
 //pthread_create();
+int uart_init(void)
+{
+    pthread_cond_init(&buffer_not_empty, NULL);
+    ring_buffer_init(&uart_ring_buffer);
+    create_detach_thread(uart_recv);
+    create_detach_thread((thread_func_t)proc_uart_data);
+}

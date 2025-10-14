@@ -48,7 +48,7 @@ include_directories(
     ${nxp_ui_name}/generated
 )
 #message(STATUS "wjxSOURCES 的值是: ${SOURCES}")
-add_executable(${PROJECT_NAME}.elf main.c uart.c ${NXP_SOURCES})
+add_executable(${PROJECT_NAME}.elf main.c uart_rcv.c uart_ui.c ring_buffer.c ${NXP_SOURCES})
 
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Release")

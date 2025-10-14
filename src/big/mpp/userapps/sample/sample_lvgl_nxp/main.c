@@ -213,7 +213,8 @@ uint32_t linux_get_idle(void)
     // return (duration_us - current_used_us) * 100 / duration_us;
 }
 
-extern int uart_recv(void*);
+
+int uart_init(void);
 int main(int argc, char *argv[]) {
     int c, ret, connector_fd;
     k_connector_type connector_type = LT9611_MIPI_4LAN_1920X1080_60FPS;
@@ -393,8 +394,10 @@ int main(int argc, char *argv[]) {
     struct timeval start, current;
     gettimeofday(&start, NULL);
 
-    static pthread_t threadid ;
-    pthread_create(&threadid, NULL, (void * (*)(void *))uart_recv, NULL);
+    //static pthread_t threadid ;
+    //pthread_create(&threadid, NULL, (void * (*)(void *))uart_recv, NULL);
+
+    uart_init();
 
     while(flag_running) {
         uint32_t idle_time = lv_timer_handler(); /*Returns the time to the next timer execution*/
@@ -409,7 +412,7 @@ int main(int argc, char *argv[]) {
         // lv_obj_set_pos(btn1, 20, (elapsed_us / 30000) % 480);
         // lv_obj_align(btn1, LV_ALIGN_CENTER, 0, (elapsed_us / 30000) % 100);
     }
-    pthread_join(threadid, NULL);
+    //pthread_join(threadid, NULL);
     vg_lite_close();
     kd_mpi_vo_osd_disable(K_VO_OSD1);
     kd_mpi_vo_disable();
