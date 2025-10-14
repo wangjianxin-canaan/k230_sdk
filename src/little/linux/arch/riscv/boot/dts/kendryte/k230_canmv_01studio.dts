@@ -18,6 +18,7 @@
 / {
 	aliases {
 		serial0 = &uart0;
+		serial1 = &uart1;
 	};
 
 	chosen {
@@ -56,6 +57,9 @@
 };
 
 &uart0 {
+	status = "okay";
+};
+&uart1 {
 	status = "okay";
 };
 

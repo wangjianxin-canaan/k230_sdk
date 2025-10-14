@@ -627,5 +627,5 @@ sample_lvgl_nxp:check_src
 	make -C userapps/sample sample_lvgl_nxp || exit $?;
 	cp   $(MPP_SRC_DIR)/userapps/sample/elf/sample-lvgl-nxp.elf $(RTSMART_SRC_DIR)/userapps/root/bin/; rm -rf $(RTSMART_SRC_DIR)/userapps/root/bin/fastboot_app.elf ;
 	echo "/bin/sample-lvgl-nxp.elf -d 2 -W 480 -H 800 " > init.sh; cp init.sh $(RTSMART_SRC_DIR)/userapps/root/bin/; rm -rf init.sh;
-	make   rtt_update_romfs big-core-opensbi
+	make   rt-smart-apps rtt_update_romfs big-core-opensbi
 	make build-image
