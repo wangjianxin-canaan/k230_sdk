@@ -35,33 +35,61 @@ void create_detach_thread(thread_func_t func)
     pthread_detach(thread);
 
 }
-
+void ui_2_home(void)
+{
+    ui_load_scr_animation(&guider_ui, &guider_ui.home, guider_ui.home_del, &guider_ui.mode_del, setup_scr_home, LV_SCR_LOAD_ANIM_NONE, 100, 0, false, true);
+    usleep(100);
+}
+void ui2_mode(void)
+{
+    // if(last_data != 'h')
+    //     ui_2_home();
+    ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
+}
 void data_2_ui(char data)
 {
+    static char last_data = 'h';
+    if(last_data == data) {
+        return;
+    }
+    if(data == '\n' || data == '\r' || data == ' ')
+        return;
+
+    if(data != 'a' && data != 'f' && data != 'e' && data != 'c' && data != 'h') {
+        printf("unknown data %c\n", data);
+        return;
+    }
+
+    //printf("last_data=%c, data=%c\n", last_data, data);
+
+    if(data != 'h' && last_data != 'h') {
+        // from mode to mode, need go home first
+        printf("can not change mode directly, need go home first %c last %c\n", data ,last_data);
+        return;
+    }
     switch (data) {
         case 'a':
-            ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
+            ui2_mode();
             lv_obj_set_tile(guider_ui.mode_tileview, guider_ui.mode_tileview_mode_a, LV_ANIM_OFF);
             break;
         case 'f':
-            ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
+            ui2_mode();
             lv_obj_set_tile(guider_ui.mode_tileview, guider_ui.mode_tileview_mode_f, LV_ANIM_OFF);
             break;
         case 'e':
-            ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
+            ui2_mode();
             lv_obj_set_tile(guider_ui.mode_tileview, guider_ui.mode_tileview_mode_e, LV_ANIM_OFF);
             break;
         case 'c':
-            ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
+            ui2_mode();
             lv_obj_set_tile(guider_ui.mode_tileview, guider_ui.mode_tileview_mode_c, LV_ANIM_OFF);
             break;
         case 'h':
-            ui_load_scr_animation(&guider_ui, &guider_ui.home, guider_ui.home_del, &guider_ui.mode_del, setup_scr_home, LV_SCR_LOAD_ANIM_NONE, 100, 0, false, true);
-            break;
-        default:
-            printf("unknown data %c\n", data);
+            ui_2_home();
             break;
     }
+    last_data = data;
+
 
 }
 
