@@ -35,7 +35,7 @@ set(LV_CONF_BUILD_DISABLE_EXAMPLES TRUE CACHE BOOL "Disable building LVGL exampl
 set(LV_CONF_BUILD_DISABLE_DEMOS TRUE CACHE BOOL "Disable building LVGL demos.")
 
 add_subdirectory(${lvgl_src} ${CMAKE_CURRENT_BINARY_DIR}/lvgl)
-set(nxp_ui_name nxp)
+set(nxp_ui_name nxp_test)
 #set(nxp_ui_name nxp1)
 
 file(GLOB_RECURSE

@@ -82,9 +82,19 @@ static void flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map)
     if(!lv_display_flush_is_last(disp)) return;
 
     static unsigned frame_count = 0;
-    frame_count++;
     int buff_idx = frame_count % 2;
-    memcpy(vb_blk_biff_virt_addr[buff_idx], px_map, BUFFER_SIZE);
+
+    lv_display_rotation_t rotation = lv_display_get_rotation(disp);
+    if((rotation == LV_DISPLAY_ROTATION_270) || (rotation == LV_DISPLAY_ROTATION_90)){
+        int32_t w = 800;
+        int32_t h = 480;
+        lv_color_format_t cf = lv_display_get_color_format(disp);
+        uint32_t w_stride = lv_draw_buf_width_to_stride(w, cf);
+        uint32_t h_stride = lv_draw_buf_width_to_stride(h, cf);
+        lv_draw_sw_rotate(px_map, vb_blk_biff_virt_addr[buff_idx], w, h, w_stride, h_stride, rotation, cf);
+    }else {
+        memcpy(vb_blk_biff_virt_addr[buff_idx], px_map, BUFFER_SIZE);
+    }
     kd_mpi_vo_chn_insert_frame(K_VO_OSD1 + 3, &vf_info[buff_idx]);
 
     // thead_csi_dcache_clean_invalid_range(px_map, dbuf[0]->size);
@@ -97,6 +107,7 @@ static void flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map)
     // uint32_t elapsed_us = (current.tv_sec - last_time.tv_sec) * 1000000 + (current.tv_usec - last_time.tv_usec);
     // last_time = current;
     // printf("flush time: %u us\n", elapsed_us);
+    frame_count++;
 
 }
 
@@ -120,6 +131,7 @@ int lvgl_hal_init(void)
         .height = height,
         .size = BUFFER_SIZE,
     };
+    lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_270);
     lv_display_set_driver_data(disp, &d);
     lv_display_set_flush_wait_cb(disp, flush_wait);
     lv_display_set_flush_cb(disp, flush);
