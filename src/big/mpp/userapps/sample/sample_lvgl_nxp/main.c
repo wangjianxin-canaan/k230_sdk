@@ -34,7 +34,7 @@
 
 lv_ui guider_ui;
 bool flag_running = true;
-unsigned width = 0, height = 0, buffer_size;
+unsigned width = 0, height = 0;
 
 
 

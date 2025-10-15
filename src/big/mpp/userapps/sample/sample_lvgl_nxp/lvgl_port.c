@@ -31,15 +31,33 @@
 #include "custom.h"
 #include <pthread.h>
 
-extern unsigned width , height , buffer_size;
+#if LV_COLOR_DEPTH == 16
+    #define BUFFER_SIZE (width * height * 2)
+#elif LV_COLOR_DEPTH == 32
+    #define BUFFER_SIZE (width * height * 4)
+#else
+#error "Unsupported color depth"
+#endif
+
+
+#ifndef DIV_ROUND_UP
+    #define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
+#endif
+
+
 struct display_data {
     unsigned width;
     unsigned height;
     unsigned size;
 };
-#ifndef DIV_ROUND_UP
-    #define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
-#endif
+
+extern unsigned width , height ;
+
+k_vb_blk_handle vb_blk_handle[2];
+void* vb_blk_biff_virt_addr[2];
+k_video_frame_info vf_info[2];
+
+
 uint32_t linux_get_idle(void)
 {
     return 0;
@@ -65,42 +83,21 @@ static void flush(lv_display_t * disp, const lv_area_t * area, uint8_t * px_map)
 
     static unsigned frame_count = 0;
     frame_count++;
-
-    // unsigned idx = frame_count % BUFFER_COUNT;
-
-    k_vb_blk_handle handle = kd_mpi_vb_get_block(VB_INVALID_POOLID, 0, NULL);
-    if (handle == VB_INVALID_HANDLE) {
-        printf("kd_mpi_vb_get_block failed\n");
-        return;
-    }
-    k_u64 phys_addr = kd_mpi_vb_handle_to_phyaddr(handle);
-    // printf("phys_addr %08lx, size: %u\n", phys_addr, buffer_size);
-    // FIXME: use gpu
-    void* virt_addr = kd_mpi_sys_mmap(phys_addr, buffer_size);
-    memcpy(virt_addr, px_map, buffer_size);
-    kd_mpi_sys_munmap(virt_addr, buffer_size);
-    k_video_frame_info vf_info = {
-        .pool_id = kd_mpi_vb_handle_to_pool_id(handle),
-        .mod_id = K_ID_VO,
-        .v_frame = {
-            .width = width,
-            .height = height,
-#if LV_COLOR_DEPTH == 16
-            .pixel_format = PIXEL_FORMAT_RGB_565,
-            .stride = width * 2,
-#elif LV_COLOR_DEPTH == 32
-            .pixel_format = PIXEL_FORMAT_BGRA_8888,
-            .stride = width * 4,
-#endif
-            .phys_addr = {phys_addr, phys_addr, phys_addr},
-        }
-    };
-    kd_mpi_vo_chn_insert_frame(K_VO_OSD1 + 3, &vf_info);
-    kd_mpi_vb_release_block(handle);
+    int buff_idx = frame_count % 2;
+    memcpy(vb_blk_biff_virt_addr[buff_idx], px_map, BUFFER_SIZE);
+    kd_mpi_vo_chn_insert_frame(K_VO_OSD1 + 3, &vf_info[buff_idx]);
 
     // thead_csi_dcache_clean_invalid_range(px_map, dbuf[0]->size);
     // vg_lite_finish();
     // printf("flush %d\n", idx);
+    //usleep(100000);
+    // static struct timeval last_time;
+    // struct timeval  current;
+    // gettimeofday(&current, NULL);
+    // uint32_t elapsed_us = (current.tv_sec - last_time.tv_sec) * 1000000 + (current.tv_usec - last_time.tv_usec);
+    // last_time = current;
+    // printf("flush time: %u us\n", elapsed_us);
+
 }
 
 static void flush_wait(lv_display_t * disp) {
@@ -117,12 +114,11 @@ static uint32_t tick_get_cb(void)
 }
 int lvgl_hal_init(void)
 {
-
     lv_display_t * disp = lv_display_create(width, height);
     struct display_data d = {
         .width = width,
         .height = height,
-        .size = buffer_size,
+        .size = BUFFER_SIZE,
     };
     lv_display_set_driver_data(disp, &d);
     lv_display_set_flush_wait_cb(disp, flush_wait);
@@ -146,14 +142,15 @@ int lvgl_hal_init(void)
 
     CHECK_ERROR(vg_lite_allocate(gbuf));
     list_push(&head, node);
-    lv_display_set_buffers(disp, gbuf->memory, NULL, buffer_size, LV_DISPLAY_RENDER_MODE_DIRECT);
+    lv_display_set_buffers(disp, gbuf->memory, NULL, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
 #else
-    void* draw_buffer = malloc(buffer_size);
-    lv_display_set_buffers(disp, draw_buffer, NULL, buffer_size, LV_DISPLAY_RENDER_MODE_DIRECT);
+    void* draw_buffer = malloc(BUFFER_SIZE);
+    lv_display_set_buffers(disp, draw_buffer, NULL, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
 #endif
     // display_commit_buffer(dbuf[0], 1920 - dbuf[0]->width, 1080 - dbuf[0]->height);
     lv_tick_set_cb(tick_get_cb);
 }
+
 
 int k230_gui_driver_init_vb()
 {
@@ -162,18 +159,11 @@ int k230_gui_driver_init_vb()
     kd_mpi_vb_exit();
     k_vb_config config;
     k_vb_pool_config pool_config;
-    buffer_size = width * height * 4;
+
     memset(&config, 0, sizeof(config));
     config.max_pool_cnt = 1;
-    config.comm_pool[0].blk_cnt = 5;
-#if LV_COLOR_DEPTH == 16
-    buffer_size = width * height * 2;
-#elif LV_COLOR_DEPTH == 32
-    buffer_size = width * height * 4;
-#else
-#error "Unsupported color depth"
-#endif
-    config.comm_pool[0].blk_size = buffer_size + 0x1000;
+    config.comm_pool[0].blk_cnt = 2;
+    config.comm_pool[0].blk_size = BUFFER_SIZE + 0x1000;
     config.comm_pool[0].mode = VB_REMAP_MODE_NOCACHE;
 
     ret = kd_mpi_vb_set_config(&config);
@@ -186,6 +176,35 @@ int k230_gui_driver_init_vb()
         printf("kd_mpi_vb_init failed: %d\n", ret);
         return ret;
     }
+
+    for(int i = 0; i < 2; i++) {
+        vb_blk_handle[i] = kd_mpi_vb_get_block(VB_INVALID_POOLID, 0, NULL);
+        if (vb_blk_handle[i] == VB_INVALID_HANDLE) {
+            printf("kd_mpi_vb_get_block failed\n");
+            return -1;
+        }
+        k_u64 phys_addr = kd_mpi_vb_handle_to_phyaddr(vb_blk_handle[i]);
+        // printf("phys_addr %08lx, size: %u\n", phys_addr, BUFFER_SIZE);
+        vb_blk_biff_virt_addr[i] = kd_mpi_sys_mmap(phys_addr, BUFFER_SIZE);
+        vf_info[i] = (k_video_frame_info) {
+        .pool_id = kd_mpi_vb_handle_to_pool_id(vb_blk_handle[i]),
+        .mod_id = K_ID_VO,
+            .v_frame = {
+            .width = width,
+            .height = height,
+#if LV_COLOR_DEPTH == 16
+            .pixel_format = PIXEL_FORMAT_RGB_565,
+            .stride = width * 2,
+#elif LV_COLOR_DEPTH == 32
+            .pixel_format = PIXEL_FORMAT_BGRA_8888,
+            .stride = width * 4,
+#endif
+            .phys_addr = {phys_addr, phys_addr, phys_addr},
+            }
+        };
+
+    }
+
     return 0;
 }
 
@@ -258,6 +277,10 @@ int k230_gui_driver_uninit(void)
     vg_lite_close();
     kd_mpi_vo_osd_disable(K_VO_OSD1);
     kd_mpi_vo_disable();
+    for(int i = 0; i < 2; i++) {
+        kd_mpi_sys_munmap(vb_blk_biff_virt_addr[i], BUFFER_SIZE);
+        kd_mpi_vb_release_block(vb_blk_handle[i]);
+    }
     usleep(50000);
     kd_mpi_vb_exit();
     return 0;
