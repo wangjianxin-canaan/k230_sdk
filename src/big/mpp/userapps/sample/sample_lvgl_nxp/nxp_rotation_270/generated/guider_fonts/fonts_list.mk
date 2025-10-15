@@ -1,0 +1,1 @@
+GEN_CSRCS += lv_font_arial_40.c lv_font_arial_53.c lv_font_arial_26.c lv_font_montserratMedium_26.c lv_font_arial_20.c lv_font_arial_83.c lv_font_arial_15.c lv_font_arial_100.c lv_font_arial_66.c lv_font_arial_50.c lv_font_arial_21.c
