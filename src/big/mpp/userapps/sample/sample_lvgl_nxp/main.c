@@ -31,6 +31,7 @@
 #include "events_init.h"
 #include "custom.h"
 #include <pthread.h>
+#include "main.h"
 
 lv_ui guider_ui;
 bool flag_running = true;
@@ -38,10 +39,6 @@ unsigned width = 0, height = 0;
 
 
 
-int uart_init(void);
-int lvgl_hal_init(void);
-int k230_gui_driver_uninit(void);
-int k230_gui_driver_init(k_connector_type connector_type);
 
 static void sighandler(int signum)
 {
@@ -199,7 +196,7 @@ int lvgl_demo_test(void)
 
 int main(int argc, char *argv[]) {
     int c, ret;
-    k_connector_type connector_type = LT9611_MIPI_4LAN_1920X1080_60FPS;
+    k_connector_type connector_type = ST7701_V1_MIPI_2LAN_480X800_30FPS;
 
     while ((c = getopt(argc, argv, "d:W:H:h")) != -1) {
         switch (c) {
@@ -223,9 +220,8 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, sighandler);
     signal(SIGTERM, sighandler);
 
-    k230_gui_driver_init(connector_type);
+    lv_port_init_k230(connector_type);
     lv_init();
-    lvgl_hal_init();
 
     setup_ui(&guider_ui);
     events_init(&guider_ui);
@@ -249,6 +245,6 @@ int main(int argc, char *argv[]) {
         // lv_obj_set_pos(btn1, 20, (elapsed_us / 30000) % 480);
         // lv_obj_align(btn1, LV_ALIGN_CENTER, 0, (elapsed_us / 30000) % 100);
     }
-    k230_gui_driver_uninit();
+    lv_port_uninit_k230();
     return 0;
 }

@@ -30,6 +30,7 @@
 #include "events_init.h"
 #include "custom.h"
 #include <pthread.h>
+#include "main.h"
 
 #if LV_COLOR_DEPTH == 16
     #define BUFFER_SIZE (width * height * 2)
@@ -51,7 +52,7 @@ struct display_data {
     unsigned size;
 };
 
-extern unsigned width , height ;
+
 
 k_vb_blk_handle vb_blk_handle[2];
 void* vb_blk_biff_virt_addr[2];
@@ -123,48 +124,10 @@ static uint32_t tick_get_cb(void)
     uint64_t time_ms = t.tv_sec * 1000 + (t.tv_nsec / 1000000);
     return time_ms;
 }
-int lvgl_hal_init(void)
-{
-    lv_display_t * disp = lv_display_create(width, height);
-    struct display_data d = {
-        .width = width,
-        .height = height,
-        .size = BUFFER_SIZE,
-    };
-    lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_270);
-    lv_display_set_driver_data(disp, &d);
-    lv_display_set_flush_wait_cb(disp, flush_wait);
-    lv_display_set_flush_cb(disp, flush);
-    lv_display_set_resolution(disp, width, height);
-    lv_display_set_dpi(disp, DIV_ROUND_UP(width * 25400, 300 * 1000));
-#if LV_USE_DRAW_VG_LITE
-        CHECK_ERROR(vg_lite_init(width, height));
-
-    struct list_head* node = calloc(sizeof(struct list_head), 1);
-    gbuf = &node->buffer;
-    gbuf->width = width;
-    gbuf->height = height;
-    #if LV_COLOR_DEPTH == 16
-    gbuf->format = VG_LITE_BGR565;
-    gbuf->stride = gbuf->width * 2;
-    #elif LV_COLOR_DEPTH == 32
-    gbuf->format = VG_LITE_RGBA8888;
-    gbuf->stride = gbuf->width * 4;
-    #endif
-
-    CHECK_ERROR(vg_lite_allocate(gbuf));
-    list_push(&head, node);
-    lv_display_set_buffers(disp, gbuf->memory, NULL, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
-#else
-    void* draw_buffer = malloc(BUFFER_SIZE);
-    lv_display_set_buffers(disp, draw_buffer, NULL, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
-#endif
-    // display_commit_buffer(dbuf[0], 1920 - dbuf[0]->width, 1080 - dbuf[0]->height);
-    lv_tick_set_cb(tick_get_cb);
-}
 
 
-int k230_gui_driver_init_vb()
+
+static int lv_port_init_k230_vb()
 {
     int ret;
         // vb pool
@@ -221,7 +184,7 @@ int k230_gui_driver_init_vb()
 }
 
 
-int k230_gui_driver_init_vo()
+static int lv_port_init_k230_vo()
 {
         // vo init
     k_vo_video_osd_attr attr = {
@@ -241,7 +204,7 @@ int k230_gui_driver_init_vo()
     kd_mpi_vo_enable();
     return 0;
 }
-int k230_gui_driver_init_connect(k_connector_type connector_type)
+static int lv_port_init_k230_connect(k_connector_type connector_type)
 {
     int ret;
     k_connector_info connector_info;
@@ -276,15 +239,138 @@ int k230_gui_driver_init_connect(k_connector_type connector_type)
 
     return 0;
 }
-int k230_gui_driver_init(k_connector_type connector_type)
+
+static int lv_port_init_k230_disp(void)
 {
-    k230_gui_driver_init_connect(connector_type);
-    k230_gui_driver_init_vb();
-    k230_gui_driver_init_vo();
+    lv_display_t * disp = lv_display_create(width, height);
+    struct display_data d = {
+        .width = width,
+        .height = height,
+        .size = BUFFER_SIZE,
+    };
+    lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_270);
+    lv_display_set_driver_data(disp, &d);
+    lv_display_set_flush_wait_cb(disp, flush_wait);
+    lv_display_set_flush_cb(disp, flush);
+    lv_display_set_resolution(disp, width, height);
+    lv_display_set_dpi(disp, DIV_ROUND_UP(width * 25400, 300 * 1000));
+#if LV_USE_DRAW_VG_LITE
+        CHECK_ERROR(vg_lite_init(width, height));
+
+    struct list_head* node = calloc(sizeof(struct list_head), 1);
+    gbuf = &node->buffer;
+    gbuf->width = width;
+    gbuf->height = height;
+    #if LV_COLOR_DEPTH == 16
+    gbuf->format = VG_LITE_BGR565;
+    gbuf->stride = gbuf->width * 2;
+    #elif LV_COLOR_DEPTH == 32
+    gbuf->format = VG_LITE_RGBA8888;
+    gbuf->stride = gbuf->width * 4;
+    #endif
+
+    CHECK_ERROR(vg_lite_allocate(gbuf));
+    list_push(&head, node);
+    lv_display_set_buffers(disp, gbuf->memory, NULL, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
+#else
+    void* draw_buffer = malloc(BUFFER_SIZE);
+    lv_display_set_buffers(disp, draw_buffer, NULL, BUFFER_SIZE, LV_DISPLAY_RENDER_MODE_DIRECT);
+#endif
+    // display_commit_buffer(dbuf[0], 1920 - dbuf[0]->width, 1080 - dbuf[0]->height);
+
+}
+lv_indev_t * indev_touchpad;
+// lv_indev_t * indev_mouse;
+// lv_indev_t * indev_keypad;
+// lv_indev_t * indev_encoder;
+lv_indev_t * indev_button;
+
+static void touchpad_init_k230(void)
+{
+    // TODO
+}
+static void touchpad_get_xy(int32_t * x, int32_t * y)
+{
+    // TODO
+    (*x) = 0;
+    (*y) = 0;
+}
+static int touchpad_is_pressed(void)
+{
+    // TODO
+    return false;
+}
+
+static void touchpad_read(lv_indev_t * indev, lv_indev_data_t * data)
+{
+
+    static int32_t last_x = 0;
+    static int32_t last_y = 0;
+
+    /*Save the pressed coordinates and the state*/
+    if(touchpad_is_pressed()) {
+        touchpad_get_xy(&last_x, &last_y);
+        data->state = LV_INDEV_STATE_PRESSED;
+    }
+    else {
+        data->state = LV_INDEV_STATE_RELEASED;
+    }
+
+    /*Set the last pressed coordinates*/
+    data->point.x = last_x;
+    data->point.y = last_y;
+}
+
+// static void button_init(void);
+// static void button_read(lv_indev_t * indev, lv_indev_data_t * data);
+// static int8_t button_get_pressed_id(void);
+// static bool button_is_pressed(uint8_t id);
+int lv_port_indev_init_k230()
+{
+
+    /* Register a touchpad input device */
+    touchpad_init_k230();
+    lv_indev_t * indev = lv_indev_create();
+    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(indev, touchpad_read);
+
+
+    /*------------------
+     * Button
+     * -----------------*/
+
+    // /*Initialize your button if you have*/
+    // button_init();
+
+    // /*Register a button input device*/
+    // indev_button = lv_indev_create();
+    // lv_indev_set_type(indev_button, LV_INDEV_TYPE_BUTTON);
+    // lv_indev_set_read_cb(indev_button, button_read);
+
+    // /*Assign buttons to points on the screen*/
+    // static const lv_point_t btn_points[2] = {
+    //     {10, 10},   /*Button 0 -> x:10; y:10*/
+    //     {40, 100},  /*Button 1 -> x:40; y:100*/
+    // };
+    // lv_indev_set_button_points(indev_button, btn_points);
+
+
     return 0;
 }
 
-int k230_gui_driver_uninit(void)
+
+int lv_port_init_k230(k_connector_type connector_type)
+{
+    lv_port_init_k230_connect(connector_type);
+    lv_port_init_k230_vb();
+    lv_port_init_k230_vo();
+    lv_port_init_k230_disp();
+    lv_tick_set_cb(tick_get_cb);
+    lv_port_indev_init_k230();
+    return 0;
+}
+
+int lv_port_uninit_k230(void)
 {
     vg_lite_close();
     kd_mpi_vo_osd_disable(K_VO_OSD1);

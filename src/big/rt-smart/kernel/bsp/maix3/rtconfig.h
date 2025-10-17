@@ -283,7 +283,10 @@
 
 
 /* touch drivers */
-
+#define RT_USING_TOUCH
+#define RT_USING_FT5316
+#define FT5316_I2C_DEV "i2c3"
+#define FT5316_I2C_ADDR 0x38
 
 /* Kendryte SDK */
 
