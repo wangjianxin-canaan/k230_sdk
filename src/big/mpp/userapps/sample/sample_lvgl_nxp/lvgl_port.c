@@ -32,6 +32,14 @@
 #include <pthread.h>
 #include "main.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <string.h>
+
+
 #if LV_COLOR_DEPTH == 16
     #define BUFFER_SIZE (width * height * 2)
 #elif LV_COLOR_DEPTH == 32
@@ -44,6 +52,22 @@
 #ifndef DIV_ROUND_UP
     #define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
 #endif
+
+
+#define RT_TOUCH_EVENT_NONE              (0)   /* Touch none */
+#define RT_TOUCH_EVENT_UP                (1)   /* Touch up event */
+#define RT_TOUCH_EVENT_DOWN              (2)   /* Touch down event */
+#define RT_TOUCH_EVENT_MOVE              (3)   /* Touch move event */
+typedef unsigned int tick_t;
+struct rt_touch_data
+{
+    uint8_t  event;                 /* 触摸事件类型 */
+    uint8_t  track_id;              /* 触摸点 ID */
+    uint8_t  width;                 /* 触摸宽度 */
+    uint16_t x_coordinate;          /* X 坐标 */
+    uint16_t y_coordinate;          /* Y 坐标 */
+    tick_t   timestamp;             /* 时间戳 */
+};
 
 
 struct display_data {
@@ -279,47 +303,62 @@ static int lv_port_init_k230_disp(void)
     // display_commit_buffer(dbuf[0], 1920 - dbuf[0]->width, 1080 - dbuf[0]->height);
 
 }
-lv_indev_t * indev_touchpad;
+//lv_indev_t * indev_touchpad;
 // lv_indev_t * indev_mouse;
 // lv_indev_t * indev_keypad;
 // lv_indev_t * indev_encoder;
-lv_indev_t * indev_button;
+//lv_indev_t * indev_button;
 
-static void touchpad_init_k230(void)
+static int touchpad_init_k230(lv_indev_t * indev)
 {
+    int fd = 0;
+    fd = open("/dev/touch0", O_RDONLY);
+    if (fd < 0) {
+        printf("open /dev/touch0 failed\n");
+        return -1;
+    }
+    lv_indev_set_driver_data(indev, (void*)(unsigned long)fd);
     // TODO
 }
-static void touchpad_get_xy(int32_t * x, int32_t * y)
+static inline void touchpad_get_xy(int32_t * x, int32_t * y)
 {
-    // TODO
-    (*x) = 0;
-    (*y) = 0;
-}
-static int touchpad_is_pressed(void)
-{
-    // TODO
-    return false;
+    //不需要旋转，lvgl内部会自己旋转；
+    return 0;
 }
 
 static void touchpad_read(lv_indev_t * indev, lv_indev_data_t * data)
 {
+    struct rt_touch_data ev;
+    int fd = (int)(uintptr_t)lv_indev_get_driver_data(indev);
+    ssize_t n = read(fd, &ev, sizeof(ev));
 
-    static int32_t last_x = 0;
-    static int32_t last_y = 0;
-
-    /*Save the pressed coordinates and the state*/
-    if(touchpad_is_pressed()) {
-        touchpad_get_xy(&last_x, &last_y);
-        data->state = LV_INDEV_STATE_PRESSED;
-    }
-    else {
+    if(n == sizeof(ev)) {
+        //printf("touch event: %d, x: %d, y: %d fd=%x n=%x %x\n", ev.event, ev.x_coordinate, ev.y_coordinate,fd,n, sizeof(ev));
+        if(ev.event == RT_TOUCH_EVENT_DOWN || ev.event == RT_TOUCH_EVENT_MOVE) {
+            data->state = LV_INDEV_STATE_PRESSED;
+            data->point.x = ev.x_coordinate;
+            data->point.y = ev.y_coordinate;
+        } else {
+            data->state = LV_INDEV_STATE_RELEASED;
+            data->point.x = ev.x_coordinate;
+            data->point.y = ev.y_coordinate;
+        }
+        touchpad_get_xy(&data->point.x, &data->point.y);
+        //printf("touch after rotate: %d, x: %d, y: %d\n", data->state, data->point.x, data->point.y);
+    } else {
         data->state = LV_INDEV_STATE_RELEASED;
     }
 
-    /*Set the last pressed coordinates*/
-    data->point.x = last_x;
-    data->point.y = last_y;
 }
+
+static int touchpad_uninit_k230(lv_indev_t * indev)
+{
+    int fd = (int)(uintptr_t)lv_indev_get_driver_data(indev);
+    close(fd);
+    return 0;
+    // TODO
+}
+
 
 // static void button_init(void);
 // static void button_read(lv_indev_t * indev, lv_indev_data_t * data);
@@ -329,8 +368,9 @@ int lv_port_indev_init_k230()
 {
 
     /* Register a touchpad input device */
-    touchpad_init_k230();
+
     lv_indev_t * indev = lv_indev_create();
+    touchpad_init_k230(indev);
     lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(indev, touchpad_read);
 
@@ -366,7 +406,7 @@ int lv_port_init_k230(k_connector_type connector_type)
     lv_port_init_k230_vo();
     lv_port_init_k230_disp();
     lv_tick_set_cb(tick_get_cb);
-    //lv_port_indev_init_k230();
+    lv_port_indev_init_k230();
     return 0;
 }
 

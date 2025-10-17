@@ -222,14 +222,14 @@ int main(int argc, char *argv[]) {
     lv_init();
     lv_port_init_k230(connector_type);
 
-    printf("f=%s l=%d\n", __FUNCTION__, __LINE__);
+    //printf("f=%s l=%d\n", __FUNCTION__, __LINE__);
 
     setup_ui(&guider_ui);
     events_init(&guider_ui);
     custom_init(&guider_ui);
 
-    struct timeval start, current;
-    gettimeofday(&start, NULL);
+    // struct timeval start, current;
+    // gettimeofday(&start, NULL);
 
     uart_init();
 
