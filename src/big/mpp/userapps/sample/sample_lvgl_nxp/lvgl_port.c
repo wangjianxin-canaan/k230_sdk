@@ -366,7 +366,7 @@ int lv_port_init_k230(k_connector_type connector_type)
     lv_port_init_k230_vo();
     lv_port_init_k230_disp();
     lv_tick_set_cb(tick_get_cb);
-    lv_port_indev_init_k230();
+    //lv_port_indev_init_k230();
     return 0;
 }
 

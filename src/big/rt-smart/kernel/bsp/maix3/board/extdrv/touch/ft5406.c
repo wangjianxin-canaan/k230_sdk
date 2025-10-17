@@ -1,3 +1,4 @@
+
 /* Copyright (c) 2023, Canaan Bright Sight Co., Ltd
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,12 +28,12 @@
 #include "rtthread.h"
 #include <stdint.h>
 
-#define DBG_TAG          "ft5x16"
+#define DBG_TAG          "ft5406"
 #define DBG_LVL          DBG_WARNING
 #define DBG_COLOR
 #include <rtdbg.h>
 
-struct ft5x16_reg {
+struct ft5x06_reg {
     uint8_t finger_num; // 0x02
 
     struct {
@@ -42,10 +43,10 @@ struct ft5x16_reg {
         uint8_t yl;     // 0x06
         uint8_t weight; //0x07
         uint8_t resv;
-    } pos[5];
+    } pos[10];
 };
 
-_Static_assert(sizeof(struct ft5x16_reg) < TOUCH_READ_REG_MAX_SIZE, "FT5x16 reg data size > TOUCH_READ_REG_MAX_SIZE");
+_Static_assert(sizeof(struct ft5x06_reg) < TOUCH_READ_REG_MAX_SIZE, "FT5x06 reg data size > TOUCH_READ_REG_MAX_SIZE");
 
 // APIs ///////////////////////////////////////////////////////////////////////
 static int read_register(struct drv_touch_dev *dev, struct touch_register *reg) {
@@ -65,17 +66,17 @@ static int parse_register(struct drv_touch_dev *dev, struct touch_register *reg,
     rt_tick_t time = reg->time;
 
     struct rt_touch_data *point = NULL;
-    struct ft5x16_reg *ft5x16_reg = (struct ft5x16_reg *)reg->reg;
+    struct ft5x06_reg *ft5x06_reg = (struct ft5x06_reg *)reg->reg;
 
-    finger_num = ft5x16_reg->finger_num & 0x0F;
+    finger_num = ft5x06_reg->finger_num & 0x0F;
 
-    if(finger_num > 5) {
+    if(finger_num > 10) {
         result->point_num = 0;
         return 0;
     }
 
     if(finger_num > TOUCH_MAX_POINT_NUMBER) {
-        LOG_W("FT5x16 touch point %d > max %d", finger_num, TOUCH_MAX_POINT_NUMBER);
+        LOG_W("FT5x06 touch point %d > max %d", finger_num, TOUCH_MAX_POINT_NUMBER);
 
         finger_num = TOUCH_MAX_POINT_NUMBER;
     }
@@ -85,8 +86,8 @@ static int parse_register(struct drv_touch_dev *dev, struct touch_register *reg,
         for(result_index = 0, point_index = 0; result_index < finger_num; result_index++, point_index++) {
             point = &result->point[point_index];
 
-            xh = ft5x16_reg->pos[result_index].xh & 0x0F;
-            xl = ft5x16_reg->pos[result_index].xl;
+            xh = ft5x06_reg->pos[result_index].xh & 0x0F;
+            xl = ft5x06_reg->pos[result_index].xl;
 
             point_x = (xh << 8) | xl;
             if(point_x > dev->touch.range_x) {
@@ -94,8 +95,8 @@ static int parse_register(struct drv_touch_dev *dev, struct touch_register *reg,
                 continue;
             }
 
-            yh = ft5x16_reg->pos[result_index].yh & 0x0F;
-            yl = ft5x16_reg->pos[result_index].yl;
+            yh = ft5x06_reg->pos[result_index].yh & 0x0F;
+            yl = ft5x06_reg->pos[result_index].yl;
 
             point_y = (yh << 8) | yl;
             if(point_y > dev->touch.range_y) {
@@ -103,10 +104,10 @@ static int parse_register(struct drv_touch_dev *dev, struct touch_register *reg,
                 continue;
             }
 
-            flg = ft5x16_reg->pos[result_index].xh >> 6;
-            id = ft5x16_reg->pos[result_index].yh >> 4;
+            flg = ft5x06_reg->pos[result_index].xh >> 6;
+            id = ft5x06_reg->pos[result_index].yh >> 4;
 
-            wight = ft5x16_reg->pos[result_index].weight;
+            wight = ft5x06_reg->pos[result_index].weight;
 
             point->event = event[flg];
             point->track_id = id;
@@ -137,7 +138,7 @@ static int get_default_rotate(struct drv_touch_dev *dev) {
     return RT_TOUCH_ROTATE_DEGREE_270;
 }
 
-int drv_touch_probe_ft5x16(struct drv_touch_dev *dev) {
+int drv_touch_probe_ft5x06(struct drv_touch_dev *dev) {
     uint8_t vendor;
 
     dev->i2c.addr = 0x38;
@@ -146,11 +147,12 @@ int drv_touch_probe_ft5x16(struct drv_touch_dev *dev) {
     if(0x00 != touch_dev_read_reg(dev, 0xA8, &vendor, 1)) {
         return -1;
     }
-    if(0x79 != vendor) {
+
+    if(0x5A != vendor) {
         return -2;
     }
 
-    rt_strncpy(dev->dev.drv_name, "ft5x16", sizeof(dev->dev.drv_name));
+    rt_strncpy(dev->dev.drv_name, "ft5x06", sizeof(dev->dev.drv_name));
 
     dev->dev.read_register = read_register;
     dev->dev.parse_register = parse_register;
