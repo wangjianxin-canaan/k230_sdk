@@ -1,5 +1,6 @@
 #include "ring_buffer.h"
-RingBuffer uart_ring_buffer;
+RingBuffer uart_ring_buffer_rcv;
+//RingBuffer uart_ring_buffer_send;
 // 初始化环形缓冲区
 void ring_buffer_init(RingBuffer *cb) {
     cb->head = 0;
@@ -15,7 +16,7 @@ bool ring_buffer_is_empty(const RingBuffer *cb) {
 
 // 检查缓冲区是否已满
 bool ring_buffer_is_full(const RingBuffer *cb) {
-    return (cb->count == BUFFER_SIZE);
+    return (cb->count == RING_BUFFER_BUFFER_SIZE);
 }
 
 // 写入数据到缓冲区 (发送/生产)
@@ -29,7 +30,7 @@ bool ring_buffer_write(RingBuffer *cb, uint8_t data) {
     cb->buffer[cb->head] = data;
 
     // 移动 head 指针，并使用模运算实现环形绕回
-    cb->head = (cb->head + 1) % BUFFER_SIZE;
+    cb->head = (cb->head + 1) % RING_BUFFER_BUFFER_SIZE;
 
     // 增加计数器
     cb->count++;
@@ -48,7 +49,7 @@ bool ring_buffer_read(RingBuffer *cb, uint8_t *data) {
     *data = cb->buffer[cb->tail];
 
     // 移动 tail 指针，并使用模运算实现环形绕回
-    cb->tail = (cb->tail + 1) % BUFFER_SIZE;
+    cb->tail = (cb->tail + 1) % RING_BUFFER_BUFFER_SIZE;
 
     // 减少计数器
     cb->count--;

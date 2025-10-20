@@ -32,6 +32,7 @@
 #include "custom.h"
 #include <pthread.h>
 #include "main.h"
+#include "ring_buffer.h"
 
 lv_ui guider_ui;
 bool flag_running = true;
@@ -223,7 +224,6 @@ int main(int argc, char *argv[]) {
     lv_port_init_k230(connector_type);
 
     //printf("f=%s l=%d\n", __FUNCTION__, __LINE__);
-
     setup_ui(&guider_ui);
     events_init(&guider_ui);
     custom_init(&guider_ui);
@@ -241,6 +241,7 @@ int main(int argc, char *argv[]) {
         }
         // printf("idle_time: %u\n", idle_time);
         usleep(idle_time * 1000);
+        //proc_uart_data(NULL);
         // gettimeofday(&current, NULL);
         // uint32_t elapsed_us = (current.tv_sec - start.tv_sec) * 1000000 + (current.tv_usec - start.tv_usec);
         // lv_obj_set_pos(btn1, 20, (elapsed_us / 30000) % 480);

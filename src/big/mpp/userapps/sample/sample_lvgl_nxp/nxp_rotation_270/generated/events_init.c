@@ -19,6 +19,7 @@
 static lv_timer_t  * task_meter;
 #include "custom.h"
 static lv_timer_t * task_chart;
+#include "../../ring_buffer.h"
 
 static void home_event_handler (lv_event_t *e)
 {
@@ -77,6 +78,8 @@ static void home_btn_mode_a_event_handler (lv_event_t *e)
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
         lv_obj_set_tile(guider_ui.mode_tileview, guider_ui.mode_tileview_mode_a, LV_ANIM_OFF);
+        uart_send_str("change to a \r\n");
+
         break;
     }
     default:
@@ -92,6 +95,7 @@ static void home_btn_mode_f_event_handler (lv_event_t *e)
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
         lv_obj_set_tile(guider_ui.mode_tileview, guider_ui.mode_tileview_mode_f, LV_ANIM_OFF);
+        uart_send_str("change to f \r\n");
         break;
     }
     default:
@@ -107,6 +111,8 @@ static void home_btn_mode_e_event_handler (lv_event_t *e)
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
         lv_obj_set_tile(guider_ui.mode_tileview, guider_ui.mode_tileview_mode_e, LV_ANIM_OFF);
+        uart_send_str("change to e \r\n");
+
         break;
     }
     default:
@@ -122,6 +128,8 @@ static void home_btn_mode_c_event_handler (lv_event_t *e)
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.mode, guider_ui.mode_del, &guider_ui.home_del, setup_scr_mode, LV_SCR_LOAD_ANIM_OVER_LEFT, 100, 100, false, true);
         lv_obj_set_tile(guider_ui.mode_tileview, guider_ui.mode_tileview_mode_c, LV_ANIM_OFF);
+        uart_send_str("change to c \r\n");
+
         break;
     }
     default:
@@ -230,6 +238,8 @@ static void mode_img_home_event_handler (lv_event_t *e)
     case LV_EVENT_CLICKED:
     {
         ui_load_scr_animation(&guider_ui, &guider_ui.home, guider_ui.home_del, &guider_ui.mode_del, setup_scr_home, LV_SCR_LOAD_ANIM_NONE, 100, 0, false, true);
+        uart_send_str("change to home gui \r\n");
+
         break;
     }
     default:

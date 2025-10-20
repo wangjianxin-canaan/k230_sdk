@@ -38,6 +38,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <string.h>
+#include "ring_buffer.h"
 
 
 #if LV_COLOR_DEPTH == 16
@@ -323,7 +324,7 @@ static int touchpad_init_k230(lv_indev_t * indev)
 static inline void touchpad_get_xy(int32_t * x, int32_t * y)
 {
     //不需要旋转，lvgl内部会自己旋转；
-    return 0;
+    return ;
 }
 
 static void touchpad_read(lv_indev_t * indev, lv_indev_data_t * data)
@@ -364,6 +365,78 @@ static int touchpad_uninit_k230(lv_indev_t * indev)
 // static void button_read(lv_indev_t * indev, lv_indev_data_t * data);
 // static int8_t button_get_pressed_id(void);
 // static bool button_is_pressed(uint8_t id);
+static bool button_is_pressed(char c, uint8_t id)
+{
+
+    /*Your code comes here*/
+    //   {260, 421},   /*Button 0 -> x:10; y:10*/
+    //     {331, 421},  /*Button 1 -> x:40; y:100*/
+    //     {403, 421},  /*Button 1 -> x:40; y:100*/
+    //     {475, 421},  /*Button 1 -> x:40; y:100*/
+    //     {21, 5},  /*Button 1 -> x:40; y:100*/
+
+
+    if(c == 0 )
+        return false;
+    //printf("get uart data: %c for button %d\n", c, id);
+
+    if((c == 'a' ) && (id == 0))
+        return true;
+    if((c == 'f' ) && (id == 1))
+        return true;
+    if((c == 'c' ) && (id == 2))
+        return true;
+    if((c == 'e' ) && (id == 3))
+        return true;
+    if((c == 'h' ) && (id == 4))
+        return true;
+
+    return false;
+}
+
+/*Get ID  (0, 1, 2 ..) of the pressed button*/
+static int8_t button_get_pressed_id(char c)
+{
+    uint8_t i;
+
+
+    /*Check to buttons see which is being pressed (assume there are 2 buttons)*/
+    for(i = 0; i < 5; i++) {
+        /*Return the pressed button's ID*/
+        if(button_is_pressed(c,i)) {
+            printf("button %d pressed\n", i);
+            return i;
+        }
+    }
+
+    /*No button pressed*/
+    return -1;
+}
+
+/*Will be called by the library to read the button*/
+static void button_read(lv_indev_t * indev_drv, lv_indev_data_t * data)
+{
+
+    static char last_btn = 0;
+    char c = get_uart_data();
+    if(c == 0 )
+        return ;
+
+    /*Get the pressed button's ID*/
+    int8_t btn_act = button_get_pressed_id(c);
+
+    if(btn_act >= 0) {
+        data->state = LV_INDEV_STATE_PRESSED;
+        last_btn = btn_act;
+    }
+    else {
+        data->state = LV_INDEV_STATE_RELEASED;
+    }
+
+    /*Save the last pressed button's ID*/
+    data->btn_id = last_btn;
+}
+
 int lv_port_indev_init_k230()
 {
 
@@ -383,16 +456,19 @@ int lv_port_indev_init_k230()
     // button_init();
 
     // /*Register a button input device*/
-    // indev_button = lv_indev_create();
-    // lv_indev_set_type(indev_button, LV_INDEV_TYPE_BUTTON);
-    // lv_indev_set_read_cb(indev_button, button_read);
+    lv_indev_t *indev_button = lv_indev_create();
+    lv_indev_set_type(indev_button, LV_INDEV_TYPE_BUTTON);
+    lv_indev_set_read_cb(indev_button, button_read);
 
-    // /*Assign buttons to points on the screen*/
-    // static const lv_point_t btn_points[2] = {
-    //     {10, 10},   /*Button 0 -> x:10; y:10*/
-    //     {40, 100},  /*Button 1 -> x:40; y:100*/
-    // };
-    // lv_indev_set_button_points(indev_button, btn_points);
+    /*Assign buttons to points on the screen*/
+    static const lv_point_t btn_points[5] = {
+        {260, 421},   /*Button 0 -> x:10; y:10*/
+        {331, 421},  /*Button 1 -> x:40; y:100*/
+        {403, 421},  /*Button 1 -> x:40; y:100*/
+        {475, 421},  /*Button 1 -> x:40; y:100*/
+        {21, 5},  /*Button 1 -> x:40; y:100*/
+    };
+    lv_indev_set_button_points(indev_button, btn_points);
 
 
     return 0;
